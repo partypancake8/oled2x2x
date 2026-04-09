@@ -31,6 +31,7 @@
 #include <Adafruit_MAX1704X.h>
 #include <Adafruit_NeoPixel.h>
 #include <Adafruit_SHT4x.h>
+#include "esp_sleep.h"
 
 #define SCREEN_WIDTH   128
 #define SCREEN_HEIGHT   64
@@ -57,11 +58,14 @@
 //   3. Shine a bright light at it — note the value → set LDR_BRIGHT_RAW
 //   4. Reflash. Screens will now span the full contrast range across your real environment.
 #define LDR_PIN              A0
-#define LDR_DARK_RAW        400   // ADC reading in your darkest condition  ← tune me
-#define LDR_BRIGHT_RAW     3600   // ADC reading in your brightest condition ← tune me
-#define LDR_MIN_CONTRAST      0   // contrast sent when at/below LDR_DARK_RAW
-#define LDR_MAX_CONTRAST    220   // contrast sent when at/above LDR_BRIGHT_RAW
-#define LDR_READ_INTERVAL_MS 1500UL
+#define LDR_DARK_RAW         50   // ADC at/below this → screens off
+#define LDR_BRIGHT_RAW     1000   // ADC at/above this → full brightness
+#define LDR_MIN_CONTRAST      0   // contrast at/below dark threshold (off)
+#define LDR_MAX_CONTRAST    220   // contrast at/above bright threshold
+#define LDR_READ_INTERVAL_MS 100UL // how often to sample (ms)
+#define LDR_DEADBAND          5   // ignore changes smaller than this
+#define LDR_SLEEP_DURATION_US (5ULL * 1000000ULL) // light-sleep check interval when dark
+
 
 const byte PROGMEM frames[][288] = {
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,63,224,7,252,0,0,255,248,31,255,0,1,192,60,60,7,192,7,128,14,112,1,224,6,0,7,224,0,224,14,0,3,192,0,112,28,0,1,128,0,56,24,0,0,0,0,24,56,0,0,0,0,24,56,0,0,0,0,12,48,0,0,0,0,12,48,0,0,0,0,12,48,0,0,0,0,12,48,0,0,0,0,12,48,0,0,0,0,12,48,0,0,0,0,28,56,0,0,0,0,28,24,0,0,0,0,24,24,0,0,0,0,56,12,0,0,0,0,56,12,0,0,0,0,112,6,0,0,0,0,112,7,0,0,0,0,224,3,128,0,0,1,192,1,128,0,0,1,192,1,192,0,0,3,128,0,240,0,0,7,0,0,120,0,0,30,0,0,60,0,0,60,0,0,30,0,0,120,0,0,7,128,0,224,0,0,3,192,3,192,0,0,1,240,7,128,0,0,0,120,30,0,0,0,0,60,60,0,0,0,0,15,240,0,0,0,0,7,224,0,0,0,0,3,128,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -118,6 +122,7 @@ int heartFrame = 0;
 unsigned long lastBatteryRead = 0, lastNtpSyncMs = 0, lastDrawMs = 0;
 unsigned long lastReconnectAttempt = 0, lastSensorRead = 0, lastLdrRead = 0;
 uint8_t currentContrast = LDR_MAX_CONTRAST;
+bool    screenSleeping  = false;  // true while in dark-triggered light sleep
 
 const unsigned long BATTERY_READ_INTERVAL_MS  = 10000UL;
 const unsigned long NTP_RESYNC_INTERVAL_MS    = 6UL * 60UL * 60UL * 1000UL;
@@ -141,12 +146,11 @@ void setAllContrast(uint8_t contrast) {
 
 void updateBrightness() {
   int raw = analogRead(LDR_PIN);
-  // Clamp to calibrated range then map to contrast
   int clamped = constrain(raw, LDR_DARK_RAW, LDR_BRIGHT_RAW);
   uint8_t target = (uint8_t)map(clamped, LDR_DARK_RAW, LDR_BRIGHT_RAW,
                                  LDR_MIN_CONTRAST, LDR_MAX_CONTRAST);
-  Serial.printf("LDR raw=%4d  clamped=%4d  contrast=%3d\n", raw, clamped, target);
-  if (abs((int)target - (int)currentContrast) > 4) {
+  Serial.printf("LDR raw=%4d  contrast=%3d\n", raw, target);
+  if (abs((int)target - (int)currentContrast) > LDR_DEADBAND) {
     currentContrast = target;
     setAllContrast(currentContrast);
   }
@@ -624,6 +628,28 @@ void loop() {
     lastLdrRead = now;
     updateBrightness();
   }
+
+  // ── Light sleep when screens are off ──────────────────────────────────────
+  if (currentContrast == 0) {
+    if (!screenSleeping) {
+      // First time going dark: drop WiFi to save power
+      WiFi.disconnect(true);
+      WiFi.mode(WIFI_OFF);
+      wifiConnected = false;
+      screenSleeping = true;
+    }
+    esp_sleep_enable_timer_wakeup(LDR_SLEEP_DURATION_US);
+    esp_light_sleep_start();
+    // Execution resumes here after timer wakeup.
+    // Loop again immediately so updateBrightness() re-reads LDR.
+    return;
+  } else if (screenSleeping) {
+    // Just came back from dark period — re-enable WiFi
+    screenSleeping = false;
+    WiFi.mode(WIFI_STA);
+    lastReconnectAttempt = 0; // force immediate reconnect attempt
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   if (wifiConnected && (!timeReady || (now - lastNtpSyncMs >= NTP_RESYNC_INTERVAL_MS))) {
     syncTimeFromNTP(5000);
