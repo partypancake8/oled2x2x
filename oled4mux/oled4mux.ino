@@ -418,9 +418,17 @@ void drawScreen3() {
   if (wifiConnected) {
     String ip = WiFi.localIP().toString();
     display.getTextBounds(ip.c_str(), 0, 0, &x1, &y1, &w, &h);
-    display.setCursor((SCREEN_WIDTH - (int)w) / 2, 55);
+    display.setCursor((SCREEN_WIDTH - (int)w) / 2, 46);
     display.print(ip);
   }
+
+  // LDR debug row: raw ADC + current contrast level
+  int ldrRaw = analogRead(LDR_PIN);
+  char ldrStr[24];
+  snprintf(ldrStr, sizeof(ldrStr), "LDR:%4d  Brt:%3d", ldrRaw, currentContrast);
+  display.setTextSize(1);
+  display.setCursor(0, 56);
+  display.print(ldrStr);
 
   display.display();
 }
