@@ -58,7 +58,7 @@
 //   3. Shine a bright light at it — note the value → set LDR_BRIGHT_RAW
 //   4. Reflash. Screens will now span the full contrast range across your real environment.
 #define LDR_PIN              A0
-#define LDR_DARK_RAW         50   // ADC at/below this → screens off
+#define LDR_DARK_RAW          0   // ADC at/below this → screens off (0 = disabled until calibrated)
 #define LDR_BRIGHT_RAW     1000   // ADC at/above this → full brightness
 #define LDR_MIN_CONTRAST      0   // contrast at/below dark threshold (off)
 #define LDR_MAX_CONTRAST    220   // contrast at/above bright threshold
