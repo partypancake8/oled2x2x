@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>4 square — build log</title>
+
+    <!-- Reveal.js: base + official black theme -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css"
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500&display=swap"
+    />
+
+    <!-- Custom theme overrides (no inline styles) -->
+    <link rel="stylesheet" href="blog.css" />
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <!-- ══ SLIDE 1 — Title ══════════════════════════════════════════════ -->
+        <section>
+          <h2>project build log</h2>
+          <h1>4 square</h1>
+          <p style="font-size: 0.6em; margin-bottom: 0">a 2×2 oled dashboard</p>
+          <p>Four OLED screens. One I²C bus. Feather ESP32-S3.</p>
+          <div class="r-meta">
+            <b>Sawyer Smith</b><br />
+            <b>April 2026</b><br />
+            <b>ESP32-S3 · TCA9548A · SSD1306</b>
+          </div>
+        </section>
+
+        <!-- ══ SLIDE 2 — Overview ═══════════════════════════════════════════ -->
+        <section>
+          <div class="r-accent"></div>
+          <h2>overview</h2>
+          <h1>what is this?</h1>
+          <p>
+            Four 128×64 OLED displays multiplexed through a TCA9548A, all on a
+            single I²C bus alongside a MAX17048 battery gauge and SHT4x
+            temperature/humidity sensor.
+          </p>
+          <p class="fragment">
+            Two cycling screen sets rotate every 15 seconds — the first shows
+            practical info, the second is a bit more fun.
+          </p>
+        </section>
+
+        <!-- ══ SLIDE 3 — Hardware components with images ════════════════════
+             Product photos pulled from Adafruit's public CDN.
+             ✏️ Swap any src to your own image.
+        ════════════════════════════════════════════════════════════════════ -->
+        <section>
+          <div class="r-accent"></div>
+          <h2>hardware</h2>
+          <h1>components</h1>
+          <div class="r-comp-grid">
+            <div class="r-comp-item">
+              <!-- Adafruit Feather ESP32-S3 — product #5477 -->
+              <img
+                src="https://cdn-shop.adafruit.com/970x728/5477-06.jpg"
+                alt="Adafruit Feather ESP32-S3"
+              />
+              <div class="r-comp-footer">
+                <span class="r-chip-name">ESP32-S3</span>
+                <span class="r-chip-role">MCU</span>
+              </div>
+            </div>
+
+            <div class="r-comp-item">
+              <!-- Adafruit Monochrome 0.96" 128×64 OLED — product #326 -->
+              <img
+                src="https://cdn-shop.adafruit.com/970x728/326-04.jpg"
+                alt='SSD1306 0.96" OLED'
+              />
+              <div class="r-comp-footer">
+                <span class="r-chip-name">SSD1306</span>
+                <span class="r-chip-role">4× Display</span>
+              </div>
+            </div>
+
+            <div class="r-comp-item">
+              <!-- Adafruit TCA9548A 1-to-8 I2C Mux — product #2717 -->
+              <img
+                src="https://cdn-shop.adafruit.com/970x728/2717-05.jpg"
+                alt="TCA9548A I2C Mux"
+              />
+              <div class="r-comp-footer">
+                <span class="r-chip-name">TCA9548A</span>
+                <span class="r-chip-role">I²C Mux</span>
+              </div>
+            </div>
+
+            <div class="r-comp-item">
+              <!-- Adafruit SHT40 Temp & Humidity STEMMA QT — product #4885 -->
+              <img
+                src="https://cdn-shop.adafruit.com/970x728/4885-05.jpg"
+                alt="SHT40 Temp/Humidity"
+              />
+              <div class="r-comp-footer">
+                <span class="r-chip-name">SHT4x</span>
+                <span class="r-chip-role">Temp / Humidity</span>
+              </div>
+            </div>
+            <!-- MAX17048 omitted — it's built into the Feather ESP32-S3 board -->
+
+            <div class="r-comp-item">
+              <!-- Adafruit LiPo 2500mAh — product #328 -->
+              <img
+                src="https://cdn-shop.adafruit.com/970x728/328-06.jpg"
+                alt="LiPo 2500mAh battery"
+              />
+              <div class="r-comp-footer">
+                <span class="r-chip-name">LiPo 2500</span>
+                <span class="r-chip-role">Battery</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ PHOTO SLIDES ═════════════════════════════════════════════════
+             ✏️ Drop your own images in the same folder as blog.html and
+             replace the src URLs below. The placehold.co URLs are just
+             stand-ins until you have real photos.
+             Copy any block to add more photo slides.
+        ════════════════════════════════════════════════════════════════════ -->
+        <section class="r-photo">
+          <video
+            autoplay
+            loop
+            muted
+            playsinline
+            src="Customizable%20project%20box_v2%20v3%20v6.mp4"
+          ></video>
+          <div class="r-photo-caption">
+            <span class="r-num">01 —</span>5-part enclosure &nbsp;·&nbsp;
+            display faceplate &nbsp;·&nbsp; display mount (×2) &nbsp;·&nbsp;
+            back panel &nbsp;·&nbsp; lid
+          </div>
+        </section>
+
+        <section class="r-photo">
+          <img
+            src="2F2CD770-BEC0-41E6-AB54-17979F8CF7B7_1_105_c.jpeg"
+            alt="prototype wiring"
+          />
+          <div class="r-photo-caption">
+            <span class="r-num">02 —</span>prototype stage &nbsp;·&nbsp;
+            protoboard mux breakout &nbsp;·&nbsp; 4× OLEDs on jumper wires
+            &nbsp;·&nbsp; testing before enclosure
+          </div>
+        </section>
+
+        <section class="r-photo">
+          <img
+            src="55FDCB12-3307-45AB-B3DE-FC59A8C4D8F1_1_105_c.jpeg"
+            alt="finished unit on desk"
+          />
+          <div class="r-photo-caption">
+            <span class="r-num">03 —</span>finished build &nbsp;·&nbsp; battery
+            % · clock · network info · indoor temp &nbsp;·&nbsp; on the desk,
+            running
+          </div>
+        </section>
+
+        <!-- ══ SLIDE — Screen layout ════════════════════════════════════════ -->
+        <section>
+          <div class="r-accent"></div>
+          <h2>software</h2>
+          <h1>screen layout</h1>
+          <p>
+            Clock top-left · Date top-right<br />
+            Battery bottom-left · Indoor temp bottom-right
+          </p>
+          <div class="r-callout">
+            The mux channel order doesn't match physical position — content is
+            assigned by where screens actually sit in the enclosure.
+          </div>
+        </section>
+
+        <!-- ══ SLIDE — Key insight ══════════════════════════════════════════ -->
+        <section>
+          <div class="r-accent"></div>
+          <h2>lesson learned</h2>
+          <h1>no wifi? no problem.</h1>
+          <p>
+            The ESP32-S3's internal RTC keeps ticking after a single NTP sync.
+            Time stays accurate without any network connection — important for a
+            device that might be shown offline.
+          </p>
+        </section>
+
+        <!-- ══ SLIDE — Why this makes sense ══════════════════════════════════ -->
+        <section>
+          <div class="r-accent"></div>
+          <h2>why does this exist</h2>
+          <h1>a display that's actually yours</h1>
+          <p>
+            E-ink displays are cool. This is cooler — color, fast refresh, and
+            every screen is independently controllable. Don't like the clock?
+            Replace it with a to-do count. Add a fifth screen. Reroute a mux
+            channel. The firmware is simple and easy to modify.
+          </p>
+          <div class="r-callout">
+            built for people who want a living desk widget — future additions
+            are a new <code>.ino</code> function away.
+          </div>
+        </section>
+
+        <!-- ══ SLIDE — End / credits ════════════════════════════════════════ -->
+        <section>
+          <h2>thanks for watching</h2>
+          <h1>sawyer made this :)</h1>
+          <div class="r-meta">
+            <b>github.com/sawyersmith/oled2x2x</b>
+          </div>
+        </section>
+      </div>
+      <!-- /slides -->
+    </div>
+    <!-- /reveal -->
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: "c/t",
+        transition: "fade",
+        transitionSpeed: "fast",
+        controls: true,
+        progress: true,
+        center: true,
+        // Fixed virtual canvas — Reveal scales it to fill the browser window
+        // while keeping aspect ratio. Use margin:0 so there are no black bars.
+        width: 1280,
+        height: 720,
+        margin: 0,
+        minScale: 0.1,
+        maxScale: 3.0,
+      });
+    </script>
+  </body>
+</html>

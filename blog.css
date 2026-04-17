@@ -1,0 +1,237 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   blog.css  —  oled2x2x build-log Reveal.js theme
+   Sits on top of reveal.js/dist/theme/black.css.
+   All Reveal layout/scaling internals are left to the framework.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Design tokens (map to Reveal's --r-* API where possible) ─────────────── */
+:root {
+  /* Reveal token overrides */
+  --r-background-color: #080b14;
+  --r-main-font: "Inter", system-ui, sans-serif;
+  --r-main-font-size: 51px;
+  --r-main-color: #c8d8f0;
+  --r-heading-font: "Share Tech Mono", monospace;
+  --r-heading-color: #00e5ff;
+  --r-heading-text-shadow: none;
+  --r-heading-letter-spacing: -0.01em;
+  --r-heading-text-transform: none;
+  --r-heading-font-weight: 400;
+  --r-link-color: #00e5ff;
+  --r-link-color-hover: #66f1ff;
+  --r-selection-background-color: #00e5ff44;
+
+  /* Local palette */
+  --surface: #0d1120;
+  --border: #1a2440;
+  --cyan: #00e5ff;
+  --cyan-dim: #007899;
+  --yellow: #ffd700;
+  --mute: #5a7090;
+  --mono: "Share Tech Mono", monospace;
+}
+
+/* ── Progress bar ──────────────────────────────────────────────────────────── */
+.reveal .progress {
+  color: var(--cyan);
+  height: 3px;
+}
+
+/* ── Slide counter ─────────────────────────────────────────────────────────── */
+/* Move to BOTTOM-LEFT so it never collides with the nav arrows (bottom-right). */
+.reveal .slide-number {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: transparent;
+  color: var(--mute);
+  /* Override Reveal's default right-side placement */
+  right: auto;
+  left: 18px;
+  bottom: 14px;
+}
+
+/* ── Nav arrows ────────────────────────────────────────────────────────────── */
+.reveal .controls {
+  color: var(--cyan);
+}
+.reveal .controls button {
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+.reveal .controls button:hover {
+  opacity: 1;
+}
+
+/* ── Heading sizes ─────────────────────────────────────────────────────────── */
+/* black.css makes h1 enormous; rein it in without breaking Reveal's scaler.    */
+.reveal h1 {
+  font-size: 2.2em; /* em = relative to Reveal's scaled base size    */
+  line-height: 1.1;
+  margin-bottom: 0.3em;
+  color: var(--cyan);
+  border: none;
+}
+.reveal h2 {
+  font-size: 0.45em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--yellow);
+  margin-bottom: 0.6em;
+  border: none;
+}
+.reveal p {
+  font-size: 0.75em;
+  font-weight: 300;
+  line-height: 1.7;
+  max-width: 27em;
+  margin: 0 0 0.5em;
+}
+
+/* ── Slide layout ──────────────────────────────────────────────────────────── */
+/* Use inner padding instead of overriding section layout so Reveal's scaler
+   is never confused by overflow.                                               */
+.reveal .slides section {
+  text-align: left;
+  box-sizing: border-box;
+  padding-left: 5%;
+  padding-right: 5%;
+}
+
+/* ── Yellow accent line ────────────────────────────────────────────────────── */
+.r-accent {
+  width: 2em;
+  height: 2px;
+  background: var(--yellow);
+  margin-bottom: 0.9em;
+}
+
+/* ── Meta block (title / credits slides) ──────────────────────────────────── */
+.r-meta {
+  font-family: var(--mono);
+  font-size: 0.55em;
+  color: var(--mute);
+  margin-top: 1em;
+  line-height: 2.2;
+}
+.r-meta b {
+  color: var(--cyan-dim);
+  font-weight: 400;
+}
+
+/* ── Callout block ─────────────────────────────────────────────────────────── */
+.r-callout {
+  border-left: 3px solid var(--cyan);
+  background: var(--surface);
+  border-radius: 0 6px 6px 0;
+  padding: 0.6em 0.9em;
+  margin-top: 1em;
+  font-size: 0.65em;
+  color: var(--mute);
+  max-width: 26em;
+}
+
+/* ── Component image grid ──────────────────────────────────────────────────── */
+.r-comp-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.6em;
+  margin-top: 1em;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.r-comp-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* prevent grid blowout */
+}
+
+/* Reset every img override Reveal puts on images inside slides */
+.reveal .r-comp-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: center;
+  background: #111827;
+  margin: 0 !important;
+  padding: 0;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.r-comp-footer {
+  padding: 0.35em 0.5em 0.45em;
+  flex-shrink: 0;
+}
+.r-comp-footer .r-chip-name {
+  font-family: var(--mono);
+  font-size: 0.55em;
+  color: var(--cyan);
+  display: block;
+}
+.r-comp-footer .r-chip-role {
+  font-family: var(--mono);
+  font-size: 0.42em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--yellow);
+  display: block;
+  margin-top: 0.2em;
+}
+
+/* ── Photo / video slides ─────────────────────────────────────────────────── */
+/* data-background-video puts the video in Reveal's bg layer (separate from     */
+/* the content layer). To pin the caption to the slide bottom we make the        */
+/* section a full-height flex column so the caption is normal flow at flex-end,  */
+/* rather than trying to use position:absolute against a centered content box.   */
+.reveal section.r-photo {
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  align-items: stretch !important;
+  height: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* img/video rule for photo slides — flex items, no overlap with caption */
+.reveal section.r-photo img,
+.reveal section.r-photo video {
+  display: block !important;
+  position: static !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  object-fit: contain !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.r-photo-caption {
+  /* Normal flow — parent's justify-content:flex-end pins this to the bottom */
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  position: relative; /* stacking context sits above the bg-video layer */
+  z-index: 20;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
+  padding: 1.2em 2em 0.9em;
+  font-family: var(--mono);
+  font-size: 0.55em;
+  color: #c8d8f0;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.r-photo-caption .r-num {
+  color: var(--cyan);
+  margin-right: 0.6em;
+}
