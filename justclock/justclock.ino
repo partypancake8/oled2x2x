@@ -158,7 +158,10 @@ bool syncTimeFromNTP(unsigned long ms = 12000) {
   unsigned long t = millis();
   while (millis() - t < ms) {
     if (getLocalTime(&ti, 200)) { timeReady = true; lastNtpSyncMs = millis(); updateStatusLED(); return true; }
-    updateStatusLED(); delay(100);
+    // Keep the screen alive while waiting for NTP
+    drawScreen();
+    updateStatusLED();
+    delay(100);
   }
   return false;
 }
@@ -194,14 +197,33 @@ void drawHeader() {
 // Identical design to the original drawTimeScreen() + day of week bottom-right
 
 void drawClockScreen() {
-  if (!timeReady) { centerText("No time", 32, 1); return; }
+  int16_t x1, y1; uint16_t w, h;
+  display.setTextColor(SSD1306_WHITE);
+
+  if (!timeReady) {
+    // Show placeholder clock so the screen is never blank
+    const char* placeholder = "--:--";
+    display.setTextSize(3);
+    display.getTextBounds(placeholder, 0, 0, &x1, &y1, &w, &h);
+    display.setCursor((SCREEN_WIDTH - (int)w) / 2, 19);
+    display.print(placeholder);
+    display.setTextSize(1);
+    centerText(wifiConnecting ? "connecting..." : "no ntp", 46, 1);
+    return;
+  }
   struct tm ti;
-  if (!getLocalTime(&ti, 20)) { centerText("No time", 32, 1); return; }
+  if (!getLocalTime(&ti, 20)) {
+    const char* placeholder = "--:--";
+    display.setTextSize(3);
+    display.getTextBounds(placeholder, 0, 0, &x1, &y1, &w, &h);
+    display.setCursor((SCREEN_WIDTH - (int)w) / 2, 19);
+    display.print(placeholder);
+    return;
+  }
 
   // Large HH:MM
   char hm[6]; strftime(hm, sizeof(hm), "%I:%M", &ti);
   if (hm[0] == '0') memmove(hm, hm + 1, sizeof(hm) - 1);
-  int16_t x1, y1; uint16_t w, h;
   display.setTextSize(3);
   display.getTextBounds(hm, 0, 0, &x1, &y1, &w, &h);
   display.setCursor((SCREEN_WIDTH - (int)w) / 2, 19);
@@ -302,9 +324,12 @@ void setup() {
   batteryOK = maxlipo.begin(&Wire);
   if (batteryOK) { maxlipo.quickStart(); delay(250); refreshBattery(); }
 
+  // Show startup splash
   display.clearDisplay(); display.setTextColor(SSD1306_WHITE);
   centerText("Connecting", 16, 1); centerText("WiFi...", 32, 2); display.display();
   connectWiFi();
+  // Clear splash before NTP sync so drawScreen() during sync shows the clock
+  display.clearDisplay(); display.display();
   if (wifiConnected) syncTimeFromNTP();
 
   // First metrics view will appear METRICS_INTERVAL_MS after boot
