@@ -12,6 +12,7 @@
 
 #include <WiFi.h>
 #include <time.h>
+#include <esp_sntp.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -36,8 +37,10 @@
 #define YBAR_BOT_H    15
 
 // Network / time
-const char* WIFI_SSID = "YOUR_SSID";
-const char* WIFI_PASS = "YOUR_PASSWORD";
+const char* WIFI_SSID  = "YOUR_SSID";
+const char* WIFI_PASS  = "YOUR_PASSWORD";
+const char* WIFI_SSID2 = "YOUR_SSID2";
+const char* WIFI_PASS2 = "YOUR_PASSWORD2";
 const char* TZ_INFO   = "EST5EDT,M3.2.0,M11.1.0";
 const char* NTP1 = "pool.ntp.org";
 const char* NTP2 = "time.nist.gov";
@@ -87,6 +90,7 @@ uint8_t       heartFrame    = 0;
 unsigned long lastHeartDraw = 0;
 
 bool          timeFromCache = false;   // true = time from NVS, not yet NTP-synced
+unsigned long lastEpochSave = 0;
 uint8_t       eyeFrame      = 0;       // 0..9 blink cycle index
 unsigned long lastEyeFrame  = 0;
 uint8_t       walkFrame     = 0;       // 0..7 walk cycle index
@@ -100,6 +104,7 @@ float         spxChangePct  = 0.0f;
 float         spxChangeDollar = 0.0f;
 time_t        spxFetchTime  = 0;
 bool          spxHasData    = false;
+bool          spxFetchOK    = false;  // true only after a successful fetch this session
 unsigned long spxFetchedAt  = 0;
 
 // ─── heart animation frames (48x48, 28 frames) ────────────────────────────────
@@ -479,25 +484,37 @@ static void drawC_Ch1() {
 static void drawC_Ch2() {
     disp2.clearDisplay();
     disp2.setTextColor(SSD1306_WHITE);
-    centerText(disp2, "BATTERY", 2, 1);
-    accentDash(disp2, 11);
+    // yellow band (software y=48..63 on FLIPPED): ──BATTERY── flanking header
+    {
+        const int tw = 7 * 6; // "BATTERY" size1 = 42px wide
+        const int tx = (128 - tw) / 2; // = 43
+        disp2.drawLine(0,       56, tx - 3,       56, SSD1306_WHITE);
+        disp2.drawLine(tx+tw+2, 56, 127,           56, SSD1306_WHITE);
+        disp2.setCursor(tx, 52);
+        disp2.setTextSize(1);
+        disp2.print("BATTERY");
+    }
     if (!batteryOK) {
-        centerText(disp2, "no gauge", 30, 1);
+        centerText(disp2, "no gauge", 20, 1);
     } else {
+        // battery icon 80×22 centered, blue zone y=4..25
+        battIcon(disp2, 24, 4, 80, 22, batteryPct);
+        // percentage small y=29
+        if (batteryPct >= 0) {
+            char pstr[6]; snprintf(pstr, sizeof(pstr), "%d%%", batteryPct);
+            centerText(disp2, pstr, 29, 1);
+        }
+        // status + rate y=39
         float rate = maxlipo.chargeRate();
         const char* status = (!isnan(rate) && rate >  0.5f) ? "CHARGING" :
                              (!isnan(rate) && rate < -0.5f) ? "DRAINING" : "IDLE";
-        centerText(disp2, status, 14, 2);
         if (!isnan(rate)) {
-            char rstr[14]; snprintf(rstr, sizeof(rstr), "%+.1f%%/hr", rate);
-            centerText(disp2, rstr, 31, 1);
-        }
-        if (batteryV > 0) {
-            char vstr[10]; snprintf(vstr, sizeof(vstr), "%.3fV", batteryV);
-            centerText(disp2, vstr, 40, 1);
+            char sstr[22]; snprintf(sstr, sizeof(sstr), "%s %+.1f%%/hr", status, rate);
+            centerText(disp2, sstr, 39, 1);
+        } else {
+            centerText(disp2, status, 39, 1);
         }
     }
-    accentComet(disp2, 52);
     disp2.display();
 }
 
@@ -505,8 +522,7 @@ static void drawC_Ch2() {
 static void drawC_Ch3() {
     disp3.clearDisplay();
     disp3.setTextColor(SSD1306_WHITE);
-    // animated comet in yellow band
-    accentTicker(disp3, 7);
+    accentComet(disp3, 7);
     centerText(disp3, "sawyer", 16, 2);
     centerText(disp3, "made this", 34, 2);
     centerText(disp3, ":)", 52, 1);
@@ -539,8 +555,9 @@ static void refreshSPX() {
             char* colon = strchr(pos, ':');
             float p = colon ? atof(colon + 1) : 0.0f;
             if (p > 100.0f) {
-                spxPrice   = p;
-                spxHasData = true;
+                spxPrice    = p;
+                spxHasData  = true;
+                spxFetchOK  = true;
                 time(&spxFetchTime);
                 // calculate change from previous close
                 if (prev > 100.0f) {
@@ -556,7 +573,9 @@ static void refreshSPX() {
                 prefs.putFloat("price", spxPrice);
                 prefs.putFloat("chpct", spxChangePct);
                 prefs.putFloat("chdol", spxChangeDollar);
-                prefs.putLong64("ftime", (long long)spxFetchTime);
+                // only save fetch time when clock is NTP-synced (not stale cache)
+                if (timeReady && !timeFromCache)
+                    prefs.putLong64("ftime", (long long)spxFetchTime);
                 prefs.end();
             }
         }
@@ -587,8 +606,35 @@ static void tryWifi() {
     delay(100);
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    static uint8_t ssidIdx = 0;
+    if (ssidIdx == 0) {
+        Serial.printf("WiFi: trying %s\n", WIFI_SSID);
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+    } else {
+        Serial.printf("WiFi: trying %s\n", WIFI_SSID2);
+        WiFi.begin(WIFI_SSID2, WIFI_PASS2);
+    }
+    ssidIdx = (ssidIdx + 1) % 2;
     wifiConnecting = true;
+}
+
+// Returns epoch of when this firmware was compiled (build-machine local time → UTC).
+// Used as a floor so a stale NVS cache can never push the clock into the past.
+static time_t compileEpoch() {
+    const char* months = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    char mon[4]; int day, year, h, m, s;
+    sscanf(__DATE__, "%3s %d %d", mon, &day, &year);
+    sscanf(__TIME__, "%d:%d:%d", &h, &m, &s);
+    int mo = (int)(strstr(months, mon) - months) / 3;
+    struct tm t = {};
+    t.tm_year = year - 1900;
+    t.tm_mon  = mo;
+    t.tm_mday = day;
+    t.tm_hour = h;
+    t.tm_min  = m;
+    t.tm_sec  = s;
+    t.tm_isdst = -1;
+    return mktime(&t);    // mktime uses TZ already set by configTzTime()
 }
 
 // ─── setup ────────────────────────────────────────────────────────────────────
@@ -672,12 +718,21 @@ void setup() {
         Preferences p; p.begin("clock", true);
         time_t saved = (time_t)p.getLong64("epoch", 0);
         p.end();
+        // Floor: compile-time is embedded at build; stale NVS cache can never
+        // be older than the moment this firmware was flashed.
+        time_t floor = compileEpoch();
+        if (saved < floor) {
+            Serial.printf("Clock: NVS stale (%ld), using compile-time floor (%ld)\n",
+                          (long)saved, (long)floor);
+            saved = floor;
+        }
         if (saved > 1609459200L) {   // sanity: after 2021-01-01
             struct timeval tv = { .tv_sec = saved, .tv_usec = 0 };
             settimeofday(&tv, nullptr);
             timeReady     = true;
             timeFromCache = true;
-            Serial.printf("Clock: restored epoch %ld from NVS\n", (long)saved);
+            Serial.printf("Clock: set to epoch %ld from %s\n", (long)saved,
+                          saved == floor ? "compile-time" : "NVS");
         }
     }
     {   // Restore last S&P price from NVS
@@ -715,19 +770,28 @@ void loop() {
         wifiConnecting = false;
         if (!wasConnected) {
             Serial.printf("WiFi connected: %s\n", WiFi.localIP().toString().c_str());
-            spxFetchedAt = 0;  // force immediate SPX fetch on reconnect
+            spxFetchedAt = 0;   // force immediate SPX fetch on reconnect
+            spxFetchOK   = false;
         }
         if (!timeReady || timeFromCache) {
-            struct tm ti;
-            if (getLocalTime(&ti, 50)) {
+            if (sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED) {
                 timeReady     = true;
                 timeFromCache = false;
                 time_t ep; time(&ep);
                 Preferences p; p.begin("clock", false);
                 p.putLong64("epoch", (long long)ep);
                 p.end();
+                lastEpochSave = now;
                 Serial.println("NTP synced — epoch saved to NVS");
             }
+        }
+        // periodically refresh saved epoch so cached time stays current
+        if (timeReady && !timeFromCache && now - lastEpochSave > 60000UL) {
+            lastEpochSave = now;
+            time_t ep; time(&ep);
+            Preferences p; p.begin("clock", false);
+            p.putLong64("epoch", (long long)ep);
+            p.end();
         }
     } else {
         if (now - lastWifiRetry > WIFI_RETRY) {
@@ -738,7 +802,9 @@ void loop() {
 
     if (now - lastBattery > BATTERY_MS) { lastBattery = now; refreshBattery(); }
     if (now - lastSensor  > SENSOR_MS)  { lastSensor  = now; refreshSensor();  }
-    if (wifiConnected && (spxFetchedAt == 0 || now - spxFetchedAt > (spxHasData ? SPX_FETCH_MS : 30000UL))) {
+    // retry every 30s until first successful fetch this session, then every 30min
+    unsigned long spxInterval = spxFetchOK ? SPX_FETCH_MS : 30000UL;
+    if (wifiConnected && (spxFetchedAt == 0 || now - spxFetchedAt > spxInterval)) {
         spxFetchedAt = now;
         refreshSPX();
     }

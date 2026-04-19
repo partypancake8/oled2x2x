@@ -7,10 +7,10 @@
 /* ── Design tokens (map to Reveal's --r-* API where possible) ─────────────── */
 :root {
   /* Reveal token overrides */
-  --r-background-color: #080b14;
+  --r-background-color: #000000;
   --r-main-font: "Inter", system-ui, sans-serif;
   --r-main-font-size: 51px;
-  --r-main-color: #c8d8f0;
+  --r-main-color: #e3e3e3;
   --r-heading-font: "Share Tech Mono", monospace;
   --r-heading-color: #00e5ff;
   --r-heading-text-shadow: none;
@@ -70,6 +70,8 @@
   margin-bottom: 0.3em;
   color: var(--cyan);
   border: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .reveal h2 {
   font-size: 0.45em;
@@ -234,4 +236,67 @@
 .r-photo-caption .r-num {
   color: var(--cyan);
   margin-right: 0.6em;
+}
+
+/* ── Side-by-side: text left, image(s) right ──────────────────────────────── */
+.r-split {
+  display: flex;
+  align-items: center;
+  gap: 1.5em;
+  width: 100%;
+}
+.r-split-text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.r-split-text h1 {
+  font-size: 1.3em;
+  margin-bottom: 0.15em;
+}
+.r-split-text p {
+  font-size: 0.6em;
+  line-height: 1.6;
+  max-width: none;
+}
+.r-split-imgs {
+  flex: 0 0 55%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+.r-split-imgs img {
+  display: block !important;
+  width: 100% !important;
+  border-radius: 8px;
+  object-fit: cover;
+  aspect-ratio: 16/10;
+  margin: 0 !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+/* Compact-heading slides (market slide) */
+.r-compact h1 {
+  font-size: 1.5em;
+  margin-bottom: 0.2em;
+}
+
+/* Three-image row used on market slide */
+.r-img-row {
+  display: flex;
+  gap: 0.6em;
+  margin-top: 0.7em;
+  width: 100%;
+}
+.r-img-row img {
+  display: block !important;
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 8px;
+  object-fit: cover;
+  object-position: center;
+  height: 5em;
+  width: 100% !important;
+  margin: 0 !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
 }
