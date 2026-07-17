@@ -1,13 +1,16 @@
-// ─── 2x2 OLED Dashboard ───────────────────────────────────────────────────────
+// ─── 2x2 OLED Clock (four-square, non-rotating) ───────────────────────────────
 // Adafruit Feather ESP32-S3
 // TCA9548A I2C mux at 0x70, four SSD1306 128x64 OLED at 0x3C
 // Wire (SDA=GPIO3, SCL=GPIO4): TCA9548A + OLEDs + MAX17048 + SHT4x
 //
-// Screen layout (physical 2x2 grid):
-//   CH0 (top-right, FLIPPED) : Date        — month/day large, day-of-week in yellow bar
-//   CH1 (bot-right, normal)  : Indoor Temp — temperature + humidity
-//   CH2 (top-left,  FLIPPED) : Clock       — HH:MM large, date in yellow bar
-//   CH3 (bot-left,  normal)  : Battery     — voltage in yellow bar, % + icon below
+// Screen layout (physical 2x2 grid), locked to the clock set — never rotates:
+//   CH2 (top-left,  FLIPPED) : Hours       — 12-hour, no leading zero
+//   CH0 (top-right, FLIPPED) : Minutes     — large MM, tiny seconds in the corner
+//   CH3 (bot-left,  normal)  : Day of week — full name (e.g. Friday)
+//   CH1 (bot-right, normal)  : Date        — MM/DD/YYYY
+//
+// The animation set (fidget/walk/heart) and info set (S&P 500, battery) are still
+// compiled in but unreachable: loop() pins screenSet = 0. See drawB_* / drawC_*.
 // ─────────────────────────────────────────────────────────────────────────────
 
 #include <WiFi.h>
@@ -83,7 +86,7 @@ bool wifiConnecting = false;
 bool timeReady      = false;
 
 unsigned long lastDraw = 0, lastSensor = 0, lastBattery = 0, lastWifiRetry = 0;
-uint8_t       screenSet    = 0;          // 0 = set A (clock/date/batt/temp), 1 = set B
+uint8_t       screenSet    = 0;          // 0=set A clock, 1=set B animations, 2=set C S&P/battery; pinned to 0
 unsigned long lastSetSwitch = 0;
 uint8_t       heartFrame    = 0;
 unsigned long lastHeartDraw = 0;

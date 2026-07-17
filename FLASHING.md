@@ -62,10 +62,10 @@ s.close()
 
 ## Full flash steps
 
-Replace `SKETCH` with the sketch folder name (e.g. `justclockmux`).
+Replace `SKETCH` with the sketch folder name (e.g. `foursquareclock`).
 
 ```bash
-SKETCH=justclockmux
+SKETCH=foursquareclock
 PORT=$(ls /dev/cu.usbmodem* | head -1)
 
 # 1. compile
@@ -109,7 +109,7 @@ If it has an IP, NTP will sync within a few seconds and the time will be accurat
 
 ## Sketch reference
 
-- `justclockmux` — clock only, 2x2 mux. Hours + minutes/seconds on the top row,
+- `foursquareclock` — clock only, 2x2 mux. Hours + minutes/seconds on the top row,
   day-of-week + date on the bottom row. Same clock code as `oled1muxtest` with the
   screen rotation locked to the clock set. WiFi: Garland.
 - `oled1muxtest` — full 2x2 dashboard that rotates through 3 sets (clock, then two

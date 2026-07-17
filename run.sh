@@ -8,12 +8,13 @@ FQBN="esp32:esp32:adafruit_feather_esp32s3:CDCOnBoot=cdc,PartitionScheme=min_spi
 #   oled1muxtest   — four-screen mux test: channels 0-3, pin-swap detection
 #   oled4mux       — full 4-screen mux dashboard
 #   justclock      — clock only + 10 s metrics screen every 60 s
+#   foursquareclock — 2x2 clock: hours/minutes/day/date, locked (never rotates)
 SKETCH="${1:-oled1muxtest}"
 SKETCH_DIR="$(cd "$(dirname "$0")" && pwd)/$SKETCH"
 
 if [[ ! -d "$SKETCH_DIR" ]]; then
   echo "ERROR: Sketch directory not found: $SKETCH_DIR"
-  echo "Usage: ./run.sh [oled1test|oled1muxtest|oled4mux|justclock]"
+  echo "Usage: ./run.sh [oled1test|oled1muxtest|oled4mux|justclock|foursquareclock]"
   exit 1
 fi
 echo ">>> Sketch: $SKETCH"
